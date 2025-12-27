@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shoaeeb'sBrowser</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="browser-container">
+        <!-- Tab Bar -->
+        <div class="tab-bar">
+            <div class="tabs-container" id="tabs-container">
+                <!-- Tabs will be dynamically added here -->
+            </div>
+            <button id="new-tab-btn" class="new-tab-btn">+</button>
+        </div>
+
+        <!-- Navigation Bar -->
+        <div class="nav-bar">
+            <div class="nav-controls">
+                <button id="back-btn" class="nav-btn" disabled>←</button>
+                <button id="forward-btn" class="nav-btn" disabled>→</button>
+                <button id="reload-btn" class="nav-btn">⟳</button>
+            </div>
+            
+            <div class="url-container">
+                <input type="text" id="url-input" placeholder="Enter URL or search..." value="https://www.google.com">
+                <button id="go-btn" class="go-btn">Go</button>
+            </div>
+            
+            <div class="action-controls">
+                <button id="focus-btn" class="action-btn" title="Focus Mode">🎯</button>
+                <button id="split-btn" class="action-btn">⚏</button>
+                <button id="bookmark-btn" class="action-btn">★</button>
+                <button id="downloads-btn" class="action-btn">⬇</button>
+                <button id="history-btn" class="action-btn">History</button>
+                <button id="bookmarks-btn" class="action-btn">Bookmarks</button>
+                <button id="help-btn" class="action-btn">?</button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <!-- Web Views Container -->
+            <div id="webviews-container" class="webviews-container">
+                <!-- Webviews will be dynamically added here -->
+            </div>
+
+            <!-- Focus/Blocking Panel -->
+            <div id="focus-panel" class="side-panel hidden">
+                <div class="panel-header">
+                    <h3>Focus Mode</h3>
+                    <button id="close-focus" class="close-btn">×</button>
+                </div>
+                <div id="focus-content" class="panel-content">
+                    <div class="focus-section">
+                        <div class="focus-toggle">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="focus-enabled" checked>
+                                <span class="toggle-slider"></span>
+                                Enable Site Blocking
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="focus-section">
+                        <h4>Blocked Domains</h4>
+                        <div class="input-group">
+                            <input type="text" id="domain-input" placeholder="Enter domain (e.g., facebook.com)">
+                            <button id="add-domain-btn" class="focus-btn">Add</button>
+                        </div>
+                        <div id="blocked-domains-list" class="blocked-list"></div>
+                    </div>
+                    
+                    <div class="focus-section">
+                        <h4>Time-Based Rules</h4>
+                        <div class="time-rule-form">
+                            <div class="domain-input-group">
+                                <label>Domain: <input type="text" id="time-rule-domain" placeholder="facebook.com (leave empty for all sites)"></label>
+                            </div>
+                            <div class="time-inputs">
+                                <label>From: <input type="time" id="start-time" value="09:00"></label>
+                                <label>To: <input type="time" id="end-time" value="17:00"></label>
+                            </div>
+                            <div class="days-selection">
+                                <label>Days:</label>
+                                <div class="days-checkboxes">
+                                    <label><input type="checkbox" value="1" checked> Mon</label>
+                                    <label><input type="checkbox" value="2" checked> Tue</label>
+                                    <label><input type="checkbox" value="3" checked> Wed</label>
+                                    <label><input type="checkbox" value="4" checked> Thu</label>
+                                    <label><input type="checkbox" value="5" checked> Fri</label>
+                                    <label><input type="checkbox" value="6"> Sat</label>
+                                    <label><input type="checkbox" value="0"> Sun</label>
+                                </div>
+                            </div>
+                            <button id="add-time-rule-btn" class="focus-btn">Add Time Rule</button>
+                        </div>
+                        <div id="time-rules-list" class="blocked-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Downloads Panel -->
+            <div id="downloads-panel" class="side-panel hidden">
+                <div class="panel-header">
+                    <h3>Downloads</h3>
+                    <button id="close-downloads" class="close-btn">×</button>
+                </div>
+                <div id="downloads-list" class="panel-content"></div>
+            </div>
+
+            <!-- History Panel -->
+            <div id="history-panel" class="side-panel hidden">
+                <div class="panel-header">
+                    <h3>History</h3>
+                    <button id="close-history" class="close-btn">×</button>
+                </div>
+                <div id="history-list" class="panel-content"></div>
+            </div>
+
+            <!-- Bookmarks Panel -->
+            <div id="bookmarks-panel" class="side-panel hidden">
+                <div class="panel-header">
+                    <h3>Bookmarks</h3>
+                    <button id="close-bookmarks" class="close-btn">×</button>
+                </div>
+                <div id="bookmarks-list" class="panel-content"></div>
+            </div>
+
+            <!-- Help Panel -->
+            <div id="help-panel" class="side-panel hidden">
+                <div class="panel-header">
+                    <h3>Keyboard Shortcuts</h3>
+                    <button id="close-help" class="close-btn">×</button>
+                </div>
+                <div id="help-content" class="panel-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
