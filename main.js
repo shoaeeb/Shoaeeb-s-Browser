@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, globalShortcut, shell, session } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, shell, session, desktopCapturer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -13,6 +13,11 @@ const BLOCKED_SITES_FILE = path.join(DATA_DIR, 'blocked-sites.json');
 
 // Download tracking
 let activeDownloads = new Map();
+
+// Enable screen sharing and media features
+app.commandLine.appendSwitch('enable-usermedia-screen-capturing');
+app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+app.commandLine.appendSwitch('enable-features', 'VizDisplayCompositor');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -56,7 +61,8 @@ function createWindow() {
       webSecurity: false,
       webviewTag: true,
       allowRunningInsecureContent: true,
-      experimentalFeatures: true
+      experimentalFeatures: true,
+      enableRemoteModule: true
     }
   });
 
@@ -65,25 +71,40 @@ function createWindow() {
   // Remove menu bar for cleaner look
   mainWindow.setMenuBarVisibility(false);
   
-  // Handle permission requests for camera, microphone, screen sharing
-  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    console.log('Permission requested:', permission);
-    // Allow all media permissions for Google Meet and similar services
-    if (permission === 'camera' || permission === 'microphone' || permission === 'display-capture' || permission === 'media') {
+  // Enable media permissions globally
+  const ses = mainWindow.webContents.session;
+  
+  // Set permission handlers for the main window session
+  ses.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    console.log('Main window permission requested:', permission, details);
+    // Allow all media-related permissions
+    const allowedPermissions = [
+      'camera', 'microphone', 'display-capture', 'media', 'geolocation', 
+      'notifications', 'fullscreen', 'pointerLock', 'openExternal'
+    ];
+    
+    if (allowedPermissions.includes(permission)) {
+      console.log('Granting permission:', permission);
       callback(true);
     } else {
+      console.log('Denying permission:', permission);
       callback(false);
     }
   });
   
-  // Handle media access requests
-  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
-    console.log('Permission check:', permission, 'from:', requestingOrigin);
-    // Allow media permissions from trusted domains
-    if (permission === 'camera' || permission === 'microphone' || permission === 'display-capture' || permission === 'media') {
-      return true;
-    }
-    return false;
+  ses.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    console.log('Main window permission check:', permission, 'from:', requestingOrigin);
+    const allowedPermissions = [
+      'camera', 'microphone', 'display-capture', 'media', 'geolocation', 
+      'notifications', 'fullscreen', 'pointerLock'
+    ];
+    return allowedPermissions.includes(permission);
+  });
+  
+  // Handle device permission requests
+  ses.setDevicePermissionHandler((details) => {
+    console.log('Device permission requested:', details);
+    return true; // Allow all device access
   });
   
   // Setup download handling
@@ -439,9 +460,52 @@ ipcMain.handle('toggle-fullscreen', async () => {
   return !isFullScreen;
 });
 
+// Screen capture IPC handler
+ipcMain.handle('get-screen-sources', async () => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen', 'window'],
+      thumbnailSize: { width: 150, height: 150 }
+    });
+    console.log('Available screen sources:', sources.length);
+    return sources.map(source => ({
+      id: source.id,
+      name: source.name,
+      thumbnail: source.thumbnail.toDataURL()
+    }));
+  } catch (error) {
+    console.error('Error getting screen sources:', error);
+    return [];
+  }
+});
+
 function setupDownloadHandling() {
   // Set up download handling for the persist:main session (used by webviews)
   const webviewSession = session.fromPartition('persist:main');
+  
+  // Enable screen capture and media permissions - Updated for correct API
+  webviewSession.setDisplayMediaRequestHandler((request, callback) => {
+    console.log('Screen capture requested');
+    const { desktopCapturer } = require('electron');
+    
+    // Get available screen sources
+    desktopCapturer.getSources({ types: ['screen', 'window'] }).then((sources) => {
+      // Find the primary screen
+      const primaryScreen = sources.find(source => source.name === 'Entire Screen' || source.name.includes('Screen 1')) || sources[0];
+      
+      if (primaryScreen) {
+        console.log('Using screen source:', primaryScreen.name);
+        // Return the desktop capturer source
+        callback({ video: primaryScreen, audio: 'loopback' });
+      } else {
+        console.error('No screen sources found');
+        callback({});
+      }
+    }).catch((error) => {
+      console.error('Error getting screen sources:', error);
+      callback({});
+    });
+  });
   
   // Enable media permissions for webviews (Google Meet, etc.)
   webviewSession.setPermissionRequestHandler((webContents, permission, callback) => {

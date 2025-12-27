@@ -38,6 +38,7 @@ class BrowserApp {
         this.initializeEventListeners();
         this.initializeKeyboardShortcuts();
         this.initializeGlobalShortcuts();
+        this.exposeElectronAPI();
         this.createNewTab('https://www.google.com', 'New Tab');
     }
 
@@ -225,6 +226,22 @@ class BrowserApp {
         });
     }
 
+    exposeElectronAPI() {
+        // Expose Electron APIs to webviews for screen sharing
+        window.electronAPI = {
+            getScreenSources: async () => {
+                try {
+                    return await ipcRenderer.invoke('get-screen-sources');
+                } catch (error) {
+                    console.error('Failed to get screen sources:', error);
+                    return [];
+                }
+            }
+        };
+        
+        console.log('Electron API exposed for screen sharing');
+    }
+
     createNewTab(url = 'https://www.google.com', title = 'New Tab') {
         const tabId = this.nextTabId++;
         
@@ -247,10 +264,11 @@ class BrowserApp {
         webview.src = url;
         webview.style.width = '100%';
         webview.style.height = '100%';
-        webview.setAttribute('webpreferences', 'contextIsolation=false,webSecurity=false,allowRunningInsecureContent=true,experimentalFeatures=true');
+        webview.setAttribute('webpreferences', 'contextIsolation=false,webSecurity=false,allowRunningInsecureContent=true,experimentalFeatures=true,enableRemoteModule=true');
         webview.setAttribute('partition', 'persist:main');
         webview.setAttribute('allowpopups', 'true');
         webview.setAttribute('plugins', 'true');
+        webview.setAttribute('disablewebsecurity', 'true');
         
         webviewWrapper.appendChild(webview);
         
@@ -465,6 +483,9 @@ class BrowserApp {
         webview.addEventListener('dom-ready', () => {
             console.log(`Tab ${tab.id} DOM ready`);
             this.updateNavigationButtons();
+            
+            // Inject screen sharing support script
+            this.injectScreenSharingSupport(webview);
         });
 
         webview.addEventListener('did-start-loading', () => {
@@ -1421,6 +1442,44 @@ class BrowserApp {
             this.fullscreenBtn.title = 'Fullscreen (F11)';
             this.fullscreenBtn.style.backgroundColor = '';
             this.fullscreenBtn.style.color = '';
+        }
+    }
+
+    injectScreenSharingSupport(webview) {
+        const script = `
+            console.log('Injecting screen sharing support...');
+            
+            // Check if getDisplayMedia exists
+            if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+                console.log('getDisplayMedia already exists, patching for Electron...');
+                
+                const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+                
+                navigator.mediaDevices.getDisplayMedia = async function(constraints) {
+                    console.log('getDisplayMedia called with:', constraints);
+                    
+                    try {
+                        // Try the native implementation first
+                        const stream = await originalGetDisplayMedia(constraints);
+                        console.log('Screen sharing successful with native API');
+                        return stream;
+                    } catch (error) {
+                        console.error('Native getDisplayMedia failed:', error);
+                        throw error;
+                    }
+                };
+                
+                console.log('Screen sharing support patched successfully');
+            } else {
+                console.error('getDisplayMedia not available in this context');
+            }
+        `;
+        
+        try {
+            webview.executeJavaScript(script);
+            console.log('Screen sharing script injected into webview');
+        } catch (error) {
+            console.error('Failed to inject screen sharing script:', error);
         }
     }
 }
