@@ -14,6 +14,7 @@ class BrowserApp {
         this.reloadBtn = document.getElementById('reload-btn');
         this.goBtn = document.getElementById('go-btn');
         this.focusBtn = document.getElementById('focus-btn');
+        this.fullscreenBtn = document.getElementById('fullscreen-btn');
         this.splitBtn = document.getElementById('split-btn');
         this.bookmarkBtn = document.getElementById('bookmark-btn');
         this.downloadsBtn = document.getElementById('downloads-btn');
@@ -59,6 +60,7 @@ class BrowserApp {
         // Action buttons
         this.bookmarkBtn.addEventListener('click', () => this.addBookmark());
         this.focusBtn.addEventListener('click', () => this.toggleFocusPanel());
+        this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
         this.downloadsBtn.addEventListener('click', () => this.toggleDownloadsPanel());
         this.historyBtn.addEventListener('click', () => this.toggleHistoryPanel());
         this.bookmarksBtn.addEventListener('click', () => this.toggleBookmarksPanel());
@@ -172,6 +174,11 @@ class BrowserApp {
                     this.reload();
                 }
             }
+            // Fullscreen shortcut (F11)
+            else if (e.key === 'F11') {
+                e.preventDefault();
+                this.toggleFullscreen();
+            }
         });
     }
 
@@ -197,6 +204,11 @@ class BrowserApp {
             if (tabIndex < this.tabs.length) {
                 this.switchToTab(this.tabs[tabIndex].id);
             }
+        });
+        
+        // Fullscreen event listeners
+        ipcRenderer.on('fullscreen-changed', (event, isFullScreen) => {
+            this.updateFullscreenButton(isFullScreen);
         });
         
         // Download event listeners
@@ -1013,6 +1025,13 @@ class BrowserApp {
                 ]
             },
             {
+                category: 'View',
+                items: [
+                    { description: 'Toggle fullscreen', keys: 'F11' },
+                    { description: 'Exit fullscreen', keys: 'Escape' }
+                ]
+            },
+            {
                 category: 'Help',
                 items: [
                     { description: 'Show this help', keys: 'F1' }
@@ -1352,6 +1371,29 @@ class BrowserApp {
         const activeTab = this.getActiveTab();
         if (activeTab) {
             activeTab.webview.reloadIgnoringCache();
+        }
+    }
+
+    async toggleFullscreen() {
+        try {
+            const isFullScreen = await ipcRenderer.invoke('toggle-fullscreen');
+            this.updateFullscreenButton(isFullScreen);
+        } catch (error) {
+            console.error('Error toggling fullscreen:', error);
+        }
+    }
+
+    updateFullscreenButton(isFullScreen) {
+        if (isFullScreen) {
+            this.fullscreenBtn.textContent = '⛶';
+            this.fullscreenBtn.title = 'Exit Fullscreen (F11 or Esc)';
+            this.fullscreenBtn.style.backgroundColor = '#007acc';
+            this.fullscreenBtn.style.color = 'white';
+        } else {
+            this.fullscreenBtn.textContent = '⛶';
+            this.fullscreenBtn.title = 'Fullscreen (F11)';
+            this.fullscreenBtn.style.backgroundColor = '';
+            this.fullscreenBtn.style.color = '';
         }
     }
 }

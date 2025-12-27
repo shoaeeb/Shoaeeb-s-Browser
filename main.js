@@ -4,8 +4,8 @@ const fs = require('fs');
 
 let mainWindow;
 
-// Data storage paths
-const DATA_DIR = path.join(__dirname, 'data');
+// Data storage paths - use user data directory for installed app
+const DATA_DIR = path.join(app.getPath('userData'), 'data');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 const BOOKMARKS_FILE = path.join(DATA_DIR, 'bookmarks.json');
 const DOWNLOADS_FILE = path.join(DATA_DIR, 'downloads.json');
@@ -16,23 +16,28 @@ let activeDownloads = new Map();
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR);
+  console.log('Creating data directory:', DATA_DIR);
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
 // Initialize data files if they don't exist
 if (!fs.existsSync(HISTORY_FILE)) {
+  console.log('Creating history file:', HISTORY_FILE);
   fs.writeFileSync(HISTORY_FILE, JSON.stringify([]));
 }
 
 if (!fs.existsSync(BOOKMARKS_FILE)) {
+  console.log('Creating bookmarks file:', BOOKMARKS_FILE);
   fs.writeFileSync(BOOKMARKS_FILE, JSON.stringify([]));
 }
 
 if (!fs.existsSync(DOWNLOADS_FILE)) {
+  console.log('Creating downloads file:', DOWNLOADS_FILE);
   fs.writeFileSync(DOWNLOADS_FILE, JSON.stringify([]));
 }
 
 if (!fs.existsSync(BLOCKED_SITES_FILE)) {
+  console.log('Creating blocked sites file:', BLOCKED_SITES_FILE);
   fs.writeFileSync(BLOCKED_SITES_FILE, JSON.stringify({
     blockedDomains: [],
     timeRules: [],
@@ -141,6 +146,20 @@ function registerGlobalShortcuts() {
     mainWindow.webContents.send('shortcut-downloads');
   });
   
+  // Fullscreen shortcuts
+  globalShortcut.register('F11', () => {
+    const isFullScreen = mainWindow.isFullScreen();
+    mainWindow.setFullScreen(!isFullScreen);
+    mainWindow.webContents.send('fullscreen-changed', !isFullScreen);
+  });
+  
+  globalShortcut.register('Escape', () => {
+    if (mainWindow.isFullScreen()) {
+      mainWindow.setFullScreen(false);
+      mainWindow.webContents.send('fullscreen-changed', false);
+    }
+  });
+  
   // Number key shortcuts (1-9)
   for (let i = 1; i <= 9; i++) {
     globalShortcut.register(`CommandOrControl+${i}`, () => {
@@ -152,6 +171,7 @@ function registerGlobalShortcuts() {
 // IPC handlers for data persistence
 ipcMain.handle('save-history', async (event, historyEntry) => {
   try {
+    console.log('Saving history entry:', historyEntry.title);
     const history = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
     history.unshift(historyEntry);
     
@@ -161,9 +181,11 @@ ipcMain.handle('save-history', async (event, historyEntry) => {
     }
     
     fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+    console.log('History saved successfully');
     return true;
   } catch (error) {
     console.error('Error saving history:', error);
+    console.error('History file path:', HISTORY_FILE);
     return false;
   }
 });
@@ -179,6 +201,7 @@ ipcMain.handle('get-history', async () => {
 
 ipcMain.handle('save-bookmark', async (event, bookmark) => {
   try {
+    console.log('Saving bookmark:', bookmark.title);
     const bookmarks = JSON.parse(fs.readFileSync(BOOKMARKS_FILE, 'utf8'));
     
     // Check if bookmark already exists
@@ -186,11 +209,15 @@ ipcMain.handle('save-bookmark', async (event, bookmark) => {
     if (!exists) {
       bookmarks.unshift(bookmark);
       fs.writeFileSync(BOOKMARKS_FILE, JSON.stringify(bookmarks, null, 2));
+      console.log('Bookmark saved successfully');
+    } else {
+      console.log('Bookmark already exists');
     }
     
     return !exists;
   } catch (error) {
     console.error('Error saving bookmark:', error);
+    console.error('Bookmarks file path:', BOOKMARKS_FILE);
     return false;
   }
 });
@@ -300,10 +327,13 @@ ipcMain.handle('get-blocked-sites', async () => {
 
 ipcMain.handle('save-blocked-sites', async (event, blockedSitesData) => {
   try {
+    console.log('Saving blocked sites data');
     fs.writeFileSync(BLOCKED_SITES_FILE, JSON.stringify(blockedSitesData, null, 2));
+    console.log('Blocked sites saved successfully');
     return true;
   } catch (error) {
     console.error('Error saving blocked sites:', error);
+    console.error('Blocked sites file path:', BLOCKED_SITES_FILE);
     return false;
   }
 });
@@ -378,6 +408,13 @@ ipcMain.handle('is-site-blocked', async (event, url) => {
     console.error('Error checking if site is blocked:', error);
     return false;
   }
+});
+
+// Fullscreen IPC handler
+ipcMain.handle('toggle-fullscreen', async () => {
+  const isFullScreen = mainWindow.isFullScreen();
+  mainWindow.setFullScreen(!isFullScreen);
+  return !isFullScreen;
 });
 
 function setupDownloadHandling() {
