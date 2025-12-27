@@ -55,7 +55,8 @@ function createWindow() {
       contextIsolation: false,
       webSecurity: false,
       webviewTag: true,
-      allowRunningInsecureContent: true
+      allowRunningInsecureContent: true,
+      experimentalFeatures: true
     }
   });
 
@@ -63,6 +64,27 @@ function createWindow() {
 
   // Remove menu bar for cleaner look
   mainWindow.setMenuBarVisibility(false);
+  
+  // Handle permission requests for camera, microphone, screen sharing
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    console.log('Permission requested:', permission);
+    // Allow all media permissions for Google Meet and similar services
+    if (permission === 'camera' || permission === 'microphone' || permission === 'display-capture' || permission === 'media') {
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
+  
+  // Handle media access requests
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    console.log('Permission check:', permission, 'from:', requestingOrigin);
+    // Allow media permissions from trusted domains
+    if (permission === 'camera' || permission === 'microphone' || permission === 'display-capture' || permission === 'media') {
+      return true;
+    }
+    return false;
+  });
   
   // Setup download handling
   setupDownloadHandling();
@@ -420,6 +442,35 @@ ipcMain.handle('toggle-fullscreen', async () => {
 function setupDownloadHandling() {
   // Set up download handling for the persist:main session (used by webviews)
   const webviewSession = session.fromPartition('persist:main');
+  
+  // Enable media permissions for webviews (Google Meet, etc.)
+  webviewSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    console.log('Webview permission requested:', permission);
+    // Allow all media permissions for video calls and screen sharing
+    if (permission === 'camera' || permission === 'microphone' || permission === 'display-capture' || 
+        permission === 'media' || permission === 'geolocation' || permission === 'notifications' ||
+        permission === 'fullscreen' || permission === 'pointerLock') {
+      console.log('Granting permission:', permission);
+      callback(true);
+    } else {
+      console.log('Denying permission:', permission);
+      callback(false);
+    }
+  });
+  
+  webviewSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    console.log('Webview permission check:', permission, 'from:', requestingOrigin);
+    // Allow media permissions from all origins (you can restrict this later if needed)
+    if (permission === 'camera' || permission === 'microphone' || permission === 'display-capture' || 
+        permission === 'media' || permission === 'geolocation' || permission === 'notifications' ||
+        permission === 'fullscreen' || permission === 'pointerLock') {
+      return true;
+    }
+    return false;
+  });
+  
+  // Enable additional web features for modern web apps
+  webviewSession.setUserAgent(webviewSession.getUserAgent() + ' ShoaeebBrowser/1.0.2');
   
   webviewSession.on('will-download', (event, item, webContents) => {
     const downloadId = Date.now().toString();

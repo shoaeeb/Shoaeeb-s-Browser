@@ -247,8 +247,10 @@ class BrowserApp {
         webview.src = url;
         webview.style.width = '100%';
         webview.style.height = '100%';
-        webview.setAttribute('webpreferences', 'contextIsolation=false,webSecurity=false');
+        webview.setAttribute('webpreferences', 'contextIsolation=false,webSecurity=false,allowRunningInsecureContent=true,experimentalFeatures=true');
         webview.setAttribute('partition', 'persist:main');
+        webview.setAttribute('allowpopups', 'true');
+        webview.setAttribute('plugins', 'true');
         
         webviewWrapper.appendChild(webview);
         
@@ -475,6 +477,31 @@ class BrowserApp {
 
         webview.addEventListener('did-fail-load', (e) => {
             console.error(`Tab ${tab.id} failed to load:`, e);
+        });
+        
+        // Handle permission requests (for camera, microphone, screen sharing)
+        webview.addEventListener('permissionrequest', (e) => {
+            console.log('Permission requested in webview:', e.permission);
+            if (e.permission === 'media' || e.permission === 'camera' || e.permission === 'microphone' || 
+                e.permission === 'display-capture' || e.permission === 'geolocation' || 
+                e.permission === 'notifications' || e.permission === 'fullscreen') {
+                console.log('Allowing permission:', e.permission);
+                e.request.allow();
+            } else {
+                console.log('Denying permission:', e.permission);
+                e.request.deny();
+            }
+        });
+        
+        // Handle new window requests (popups for Google Meet, etc.)
+        webview.addEventListener('new-window', (e) => {
+            console.log('New window requested:', e.url);
+            // Allow popups for trusted domains
+            if (e.url.includes('meet.google.com') || e.url.includes('zoom.us') || 
+                e.url.includes('teams.microsoft.com') || e.url.includes('webex.com')) {
+                // Open in the same webview instead of new window
+                webview.src = e.url;
+            }
         });
 
         webview.addEventListener('will-navigate', async (e) => {

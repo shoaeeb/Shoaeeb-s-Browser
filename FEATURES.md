@@ -1,6 +1,6 @@
-# Electron Browser MVP - Features
+# ShoaeebBrowser - Features
 
-A comprehensive desktop browser built with Electron and plain JavaScript, featuring modern browsing capabilities with a clean, minimal interface.
+A comprehensive desktop browser built with Electron and plain JavaScript, featuring modern browsing capabilities with productivity tools and media support.
 
 ## 🌐 Core Browsing Features
 
@@ -12,6 +12,14 @@ A comprehensive desktop browser built with Electron and plain JavaScript, featur
   - Supports direct URL navigation
 - **Navigation Controls**: Back, forward, and reload buttons with proper state management
 - **Default Homepage**: Opens to Google.com for immediate search capability
+
+### Media & Communication Support
+- **Camera Access**: Full camera permissions for video calls
+- **Microphone Access**: Audio input support for voice/video calls
+- **Screen Sharing**: Complete screen capture capabilities
+- **Google Meet Support**: Full compatibility with Google Meet
+- **Video Conferencing**: Works with Zoom, Teams, WebEx, and other platforms
+- **Popup Handling**: Smart popup management for meeting platforms
 
 ### Address Bar
 - **Smart Input**: Enter URLs or search terms directly
@@ -46,6 +54,20 @@ A comprehensive desktop browser built with Electron and plain JavaScript, featur
 - **Independent Navigation**: Each split tab maintains its own state
 - **Seamless Switching**: Easy toggle between single and split modes
 - **Auto-Management**: Handles tab creation/closing intelligently
+
+## 🖥️ View & Display
+
+### Fullscreen Mode
+- **F11 Toggle**: Standard fullscreen keyboard shortcut
+- **Fullscreen Button**: Click the ⛶ button in toolbar
+- **Escape Exit**: Quick exit with Escape key
+- **Visual Feedback**: Button changes color when in fullscreen
+- **Immersive Experience**: Perfect for presentations, videos, and focused work
+
+### Window Management
+- **Resizable Window**: Standard window controls
+- **Clean Interface**: Minimal UI for maximum content space
+- **Menu-Free**: Hidden menu bar for cleaner appearance
 
 ## 📚 Data Management
 
